@@ -14,12 +14,11 @@ class Ship:
         if self.horizontal:
             move = 1
         f_count = self.__hit.count(False)
+        if self.bow == (0, 0):
+            return 'missed'
         if self.__hit.count(False) > 1:
             self.__hit[tuple[move] - self.bow[move]] = True
-            if f_count - self.__hit.count(False) > 0:
-                return 'shot'
-            else:
-                return 'missed'
+            return 'shot'
         else:
             self.__hit[tuple[move] - self.bow[move]] = True
             return 'destroyed'
@@ -104,9 +103,9 @@ class Field:
         for y in range(10):
             for x in range(10):
                 if (y + 1, x + 1) in self.shot and self.__ships[y][x].get_length() == 0:
-                    field_str[y] += "0"
-                elif (y + 1, x + 1) in self.shot and self.__ships[y][x].get_length() > 0:
                     field_str[y] += "X"
+                elif (y + 1, x + 1) in self.shot and self.__ships[y][x].get_length() > 0:
+                    field_str[y] += "0"
                 else:
                     field_str[y] += " "
         return "\n".join(field_str)
@@ -153,7 +152,6 @@ class Game:
         while self.__ships_left[current_player] != 0:
             print(self.field_with_ships(current_player))
             print(self.field_without_ships(1 - current_player))
-            #print("\n" * 100)
             coord_hit = self.__players[current_player].read_position()
             if self.__field[1 - current_player].shoot_at(coord_hit) == 'destroyed':
                 self.__ships_left[current_player] -= 1
@@ -163,5 +161,6 @@ class Game:
             else:
                 print('You loser ain\'t my bro, try again later. ')
                 current_player = 1 - current_player
+
 game1 = Game()
 game1.play_finally()
