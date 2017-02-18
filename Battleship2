@@ -1,0 +1,142 @@
+import random
+
+
+class Ship:
+
+    def __init__(self, length):
+        self.__length = length
+        self.__hit = [False] * length
+        self.bow = (0, 0)
+        self.horizontal = True
+
+    def shoot_at(self, tuple):
+        move = 0
+        if self.horizontal:
+            move = 1
+        self.__hit[tuple[move] - self.bow[move]] = True
+        return self.__hit
+
+    def get_length(self):
+        return self.__length
+
+    def get_hit(self):
+        return self.__hit
+
+
+class Field:
+    def __init__(self):
+        self.__ships = Field.field_generator()
+        self.shot = []
+
+    @staticmethod
+    def space_around(coords, lst):
+        square = (lst[-1][0] - lst[0][0] + 3, lst[-1][1] - lst[0][1] + 3)
+        for i in range(len(lst)):
+            for x in range(-1, 2):
+                for y in range(-1, 2):
+                    if (lst[i][0] + x, lst[i][1] + y) in coords:
+                        coords.remove((lst[i][0] + x, lst[i][1] + y))
+        return coords
+
+    @staticmethod
+    def field_generator():
+        coords = []
+        for i in range(1, 11):
+            for j in range(1, 11):
+                coords.append((i, j))
+        field = [[Ship(0) for i in range(10)] for i in range(10)]
+        ships = [4 - i for i in range(4) for j in range(i + 1)]
+        iterat = 0
+        while iterat < 10:
+            coord = random.choice(coords)
+            ship = random.choice([(1, ships[iterat]), (ships[iterat], 1)])
+            if ship[0] == 1:
+                horizontal = True
+            else:
+                horizontal = False
+            ship_coords = []
+            check_coord = False
+            for height in range(ship[0]):
+                for length in range(ship[1]):
+                    if (coord[0] + height, coord[1] + length) not in coords:
+                        check_coord = True
+            if check_coord:
+                continue
+            for height in range(ship[0]):
+                for length in range(ship[1]):
+                    ship_coords.append((coord[0] + height, coord[1] + length))
+            sh = Ship(len(ship_coords))
+            sh.bow = ship_coords[0]
+            sh.horizontal = horizontal
+            for i in range(len(ship_coords)):
+                field[ship_coords[i][1] - 1][ship_coords[i][0] - 1] = sh
+                coords.remove(ship_coords[i])
+            iterat += 1
+            coords = Field.space_around(coords, ship_coords)
+        return field
+
+    def shoot_at(self, tuple):
+        self.shot.append(tuple)
+        return self.__ships[tuple[1] - 1][tuple[0] - 1].shoot_at(tuple)
+
+    def field_with_ships(self):
+        field_str = ["" for i in range(10)]
+        for y in range(10):
+            for x in range(10):
+                if self.__ships[y][x].get_length() == 0:
+                    field_str[y] += " "
+                elif (y + 1, x + 1) in self.shot:
+                    field_str[y] += "X"
+                elif self.__ships[y][x].get_length() > 0:
+                    field_str[y] += "*"
+        return "\n".join(field_str)
+
+    def field_without_ships(self):
+        field_str = ["" for i in range(10)]
+        for y in range(10):
+            for x in range(10):
+                if (y + 1, x + 1) in self.shot and self.__ships[y][x].get_length() == 0:
+                    field_str[y] += "0"
+                elif (y + 1, x + 1) in self.shot and self.__ships[y][x].get_length() > 0:
+                    field_str[y] += "X"
+                else:
+                    field_str[y] += " "
+        return "\n".join(field_str)
+
+
+field1 = Field()
+print(field1.field_without_ships())
+
+
+class Player:
+
+    def __init__(self, name):
+        self.name = name
+
+    def read_position(self):
+        greet = input(self.name + " enter move: ")
+        invalid_arg = ValueError
+        try:
+            coord = (ord(greet[0].upper()) - 64, int(greet[1:]))
+            if coord[0] not in range(11) or coord[1] not in range(11):
+                raise invalid_arg
+        except ValueError:
+                print("Wrong argument. Try again.")
+                return (0, 0)
+        return coord
+
+
+class Game:
+    def __init__(self):
+        field = [Field(), Field()]
+        players = [Player("Player1"), Player("Player2")]
+        current_player = 0
+
+    def read_position(self):
+        return self.players[self.current_player].read_position()
+
+    def field_without_ships(self, index):
+        return self.field[index].field_without_ships()
+
+    def field_with_ships(self, index):
+        return self.field[index].field_with_ships()
