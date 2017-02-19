@@ -1,27 +1,30 @@
 import random
+import os
 
 
 class Ship:
 
-    def __init__(self, length):
+    def __init__(self, length=0, bow=(0, 0), horizontal=True):
         self.__length = length
         self.__hit = [False] * length
-        self.bow = (0, 0)
-        self.horizontal = True
+        self.bow = bow
+        self.horizontal = horizontal
 
-    def shoot_at(self, tuple):
+    def shoot_at(self, coords):
         move = 0
         if self.horizontal:
             move = 1
-        f_count = self.__hit.count(False)
-        if self.bow == (0, 0):
-            return 'missed'
-        if self.__hit.count(False) > 1:
-            self.__hit[tuple[move] - self.bow[move]] = True
-            return 'shot'
+        if len(self.__hit) > 0:
+            self.__hit[coords[1 - move] - self.bow[move]] = True
+            return True
         else:
-            self.__hit[tuple[move] - self.bow[move]] = True
-            return 'destroyed'
+            return False
+
+    def is_destroyed(self):
+        if False not in self.__hit and self.__length > 0:
+            return True
+        else:
+            return False
 
     def get_length(self):
         return self.__length
@@ -34,6 +37,9 @@ class Field:
     def __init__(self):
         self.__ships = Field.field_generator()
         self.shot = []
+
+    def get_ships(self):
+        return self.__ships
 
     @staticmethod
     def space_around(coords, lst):
@@ -51,7 +57,7 @@ class Field:
         for i in range(1, 11):
             for j in range(1, 11):
                 coords.append((i, j))
-        field = [[Ship(0) for i in range(10)] for i in range(10)]
+        field = [[Ship() for i in range(10)] for i in range(10)]
         ships = [4 - i for i in range(4) for j in range(i + 1)]
         iterat = 0
         while iterat < 10:
@@ -72,9 +78,7 @@ class Field:
             for height in range(ship[0]):
                 for length in range(ship[1]):
                     ship_coords.append((coord[0] + height, coord[1] + length))
-            sh = Ship(len(ship_coords))
-            sh.bow = ship_coords[0]
-            sh.horizontal = horizontal
+            sh = Ship(length=len(ship_coords), bow=ship_coords[0], horizontal=horizontal)
             for i in range(len(ship_coords)):
                 field[ship_coords[i][1] - 1][ship_coords[i][0] - 1] = sh
                 coords.remove(ship_coords[i])
@@ -82,37 +86,35 @@ class Field:
             coords = Field.space_around(coords, ship_coords)
         return field
 
-    def shoot_at(self, tuple):
-        self.shot.append(tuple)
-        return self.__ships[tuple[1] - 1][tuple[0] - 1].shoot_at(tuple)
+    def shoot_at(self, coords):
+        self.shot.append(coords)
+        return self.__ships[coords[0] - 1][coords[1] - 1].shoot_at(coords)
 
     def field_with_ships(self):
-        field_str = ["" for i in range(10)]
+        field_str = [str(i) + " " * (2 - len(str(i))) for i in range(1, 11)]
         for y in range(10):
             for x in range(10):
                 if self.__ships[y][x].get_length() == 0:
-                    field_str[y] += " "
+                    field_str[y] += "  "
                 elif (y + 1, x + 1) in self.shot:
-                    field_str[y] += "X"
+                    field_str[y] += " X"
                 elif self.__ships[y][x].get_length() > 0:
-                    field_str[y] += "*"
+                    field_str[y] += " *"
+        field_str.insert(0, "   A B C D E F G H I J")
         return "\n".join(field_str)
 
     def field_without_ships(self):
-        field_str = ["" for i in range(10)]
+        field_str = [str(i) + " " * (2 - len(str(i))) for i in range(1, 11)]
         for y in range(10):
             for x in range(10):
                 if (y + 1, x + 1) in self.shot and self.__ships[y][x].get_length() == 0:
-                    field_str[y] += "X"
+                    field_str[y] += " 0"
                 elif (y + 1, x + 1) in self.shot and self.__ships[y][x].get_length() > 0:
-                    field_str[y] += "0"
+                    field_str[y] += " X"
                 else:
-                    field_str[y] += " "
+                    field_str[y] += "  "
+        field_str.insert(0, "   A B C D E F G H I J")
         return "\n".join(field_str)
-
-
-field1 = Field()
-print(field1.field_without_ships())
 
 
 class Player:
@@ -124,7 +126,7 @@ class Player:
         greet = input(self.name + " enter move: ")
         invalid_arg = ValueError
         try:
-            coord = (ord(greet[0].upper()) - 64, int(greet[1:]))
+            coord = (int(greet[1:]), ord(greet[0].upper()) - 64)
             if coord[0] not in range(11) or coord[1] not in range(11):
                 raise invalid_arg
         except ValueError:
@@ -136,7 +138,7 @@ class Player:
 class Game:
     def __init__(self):
         player1 = input("Hey, bro! Enter your name:  ")
-        player2 = input("Hey, bro! Enter your name:  ")
+        player2 = input("Hey, another bro! Enter your name:  ")
         self.__field = [Field(), Field()]
         self.__players = [Player(player1), Player(player2)]
         self.__ships_left = [10, 10]
@@ -147,20 +149,33 @@ class Game:
     def field_with_ships(self, index):
         return self.__field[index].field_with_ships()
 
+    def hide_field(self):
+        i = input('Press ENTER')
+        os.system('cls')
+        print('Give computer to another player.\n\n')
+        os.system('cls')
+
     def play_finally(self):
         current_player = 0
         while self.__ships_left[current_player] != 0:
             print(self.field_with_ships(current_player))
             print(self.field_without_ships(1 - current_player))
             coord_hit = self.__players[current_player].read_position()
-            if self.__field[1 - current_player].shoot_at(coord_hit) == 'destroyed':
-                self.__ships_left[current_player] -= 1
-                print('Hey, you got that ship, bro')
-            elif self.__field[1 - current_player].shoot_at(coord_hit) == 'shot':
-                print('Hey, good shooting, bro. Shoot more.')
+            if coord_hit == (0, 0):
+                coord_hit = self.__players[current_player].read_position()
+            x = coord_hit[0]
+            y = coord_hit[1]
+            if self.__field[1 - current_player].shoot_at(coord_hit):
+                if self.__field[1 - current_player].get_ships()[x - 1][y - 1].is_destroyed():
+                    print('Hey, you got that ship, bro')
+                    self.__ships_left[current_player] -= 1
+                else:
+                    print('Hey, good shooting, bro. Shoot more.')
             else:
                 print('You loser ain\'t my bro, try again later. ')
                 current_player = 1 - current_player
+            self.hide_field()
+        print('\n\nDUDE YOU WON! CONGRATS! YOU WANNA CELEBRATE?')
 
 game1 = Game()
 game1.play_finally()
