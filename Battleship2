@@ -1,16 +1,28 @@
 import random
 import os
+import time
 
 
 class Ship:
 
     def __init__(self, length=0, bow=(0, 0), horizontal=True):
+        '''
+        Define parameters for class Ship.
+        :param length: length of a ship situated in a coord, if none - 0
+        :param bow: top-left coordinate
+        :param horizontal: True if horizontal
+        '''
         self.__length = length
         self.__hit = [False] * length
         self.bow = bow
         self.horizontal = horizontal
 
     def shoot_at(self, coords):
+        '''
+        Checks if the ship was hit.
+        :param coords: hit coord
+        :return: True if ship is in that coordinate
+        '''
         move = 0
         if self.horizontal:
             move = 1
@@ -21,29 +33,53 @@ class Ship:
             return False
 
     def is_destroyed(self):
+        '''
+        Check if ship is destroyed.
+        :return: True if the whole ship is destroyed
+        '''
         if False not in self.__hit and self.__length > 0:
             return True
         else:
             return False
 
     def get_length(self):
+        '''
+        Get private parameter length
+        :return: int
+        '''
         return self.__length
 
     def get_hit(self):
+        '''
+        Get list of bool for a boat, that indicates if coord is hit.
+        :return: list
+        '''
         return self.__hit
 
 
 class Field:
     def __init__(self):
+        '''
+        Create a field object using field_generator
+        '''
         self.__ships = Field.field_generator()
         self.shot = []
 
     def get_ships(self):
+        '''
+        Get field full of objects
+        :return: list of lists of objects Ship
+        '''
         return self.__ships
 
     @staticmethod
     def space_around(coords, lst):
-        square = (lst[-1][0] - lst[0][0] + 3, lst[-1][1] - lst[0][1] + 3)
+        '''
+        Remove all the coordinates that surround a ship.
+        :param coords: list of available coordinates (not with ships or around it)
+        :param lst: list of coordinates of a ship created
+        :return: list of available coordinates
+        '''
         for i in range(len(lst)):
             for x in range(-1, 2):
                 for y in range(-1, 2):
@@ -53,6 +89,10 @@ class Field:
 
     @staticmethod
     def field_generator():
+        '''
+        Generate a random field of ships.
+        :return: string
+        '''
         coords = []
         for i in range(1, 11):
             for j in range(1, 11):
@@ -87,10 +127,19 @@ class Field:
         return field
 
     def shoot_at(self, coords):
+        '''
+        Append shot coordinates to a list and return True if there is a boat in a coord.
+        :param coords: tuple(int, int)
+        :return: bool
+        '''
         self.shot.append(coords)
         return self.__ships[coords[0] - 1][coords[1] - 1].shoot_at(coords)
 
     def field_with_ships(self):
+        '''
+        Return a field with ships
+        :return: string
+        '''
         field_str = [str(i) + " " * (2 - len(str(i))) for i in range(1, 11)]
         for y in range(10):
             for x in range(10):
@@ -104,6 +153,10 @@ class Field:
         return "\n".join(field_str)
 
     def field_without_ships(self):
+        '''
+        Return a field without ships
+        :return: string
+        '''
         field_str = [str(i) + " " * (2 - len(str(i))) for i in range(1, 11)]
         for y in range(10):
             for x in range(10):
@@ -120,9 +173,17 @@ class Field:
 class Player:
 
     def __init__(self, name):
+        '''
+        Define name of a player
+        :param name: name of a player
+        '''
         self.name = name
 
     def read_position(self):
+        '''
+        Read a coordinate a player is shooting at.
+        :return: tuple(int, int)
+        '''
         greet = input(self.name + " enter move: ")
         invalid_arg = ValueError
         try:
@@ -137,26 +198,51 @@ class Player:
 
 class Game:
     def __init__(self):
-        player1 = input("Hey, bro! Enter your name:  ")
-        player2 = input("Hey, another bro! Enter your name:  ")
+        '''
+        Define fields and names for 2 players.
+        '''
+        self.player1 = input("Hey, bro! Enter your name:  ")
+        self.player2 = input("Hey, another bro! Enter your name:  ")
         self.__field = [Field(), Field()]
-        self.__players = [Player(player1), Player(player2)]
+        self.__players = [Player(self.player1), Player(self.player2)]
         self.__ships_left = [10, 10]
 
     def field_without_ships(self, index):
+        '''
+        Return a field without ships for a player with index
+        :param index: integer
+        :return: string
+        '''
         return self.__field[index].field_without_ships()
 
     def field_with_ships(self, index):
+        '''
+        Return a field with ships for a player with index
+        :param index: integer
+        :return: string
+        '''
         return self.__field[index].field_with_ships()
 
     def hide_field(self):
+        '''
+        Hide a field of another player by clearing screen
+        :return: None
+        '''
         i = input('Press ENTER')
         os.system('cls')
-        print('Give computer to another player.\n\n')
+        print('Give computer to another player if missed.\n\n')
+        time.sleep(4)
         os.system('cls')
+        print('\n')
 
     def play_finally(self):
+        '''
+        The main method that calls all the others and prints.
+        :return: None
+        '''
         current_player = 0
+        print(self.player2, ", don't look at the screen!")
+        inp = input('Press ENTER')
         while self.__ships_left[current_player] != 0:
             print(self.field_with_ships(current_player))
             print(self.field_without_ships(1 - current_player))
@@ -172,7 +258,7 @@ class Game:
                 else:
                     print('Hey, good shooting, bro. Shoot more.')
             else:
-                print('You loser ain\'t my bro, try again later. ')
+                print("You loser ain't my bro, try again later. ")
                 current_player = 1 - current_player
             self.hide_field()
         print('\n\nDUDE YOU WON! CONGRATS! YOU WANNA CELEBRATE?')
